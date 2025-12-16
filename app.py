@@ -5,6 +5,7 @@ import math
 import base64
 import traceback
 import sys
+import os
 from io import BytesIO
 from flask import Flask, render_template, Response, jsonify, send_file
 from flask_cors import CORS
@@ -339,3 +340,13 @@ if __name__ == '__main__':
     else:
         print("ERROR: Could not start processing")
         sys.exit(1)
+
+# Support environment port for cloud deployment (Railway, Render, Heroku)
+if __name__ != '__main__':
+    # Running under gunicorn
+    pass
+else:
+    # Running directly, get port from environment or use default
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug, host='0.0.0.0', port=port)
