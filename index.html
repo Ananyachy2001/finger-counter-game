@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finger Counter Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1280px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e0c3fc 0%, #f3e7e9 100%);
+            min-height: 600px;
+        }
+
+        .video-container {
+            position: relative;
+            background: black;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        .canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: scaleX(-1);
+        }
+
+        .game-ui {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .ui-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .target-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .target-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .target-number {
+            font-size: 80px;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .counter-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .counter-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .counter-number {
+            font-size: 80px;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-weight: bold;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 24px;
+        }
+
+        .fingers-panel {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .finger-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+
+        .finger-indicator {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .finger-indicator.extended {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .finger-indicator.closed {
+            background: #ccc;
+            color: #666;
+        }
+
+        .finger-name {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .palm-status {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .palm-status.front {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .palm-status.back {
+            background: #ffe0b2;
+            color: #e65100;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+            transition: width 0.3s ease;
+        }
+
+        .instruction {
+            text-align: center;
+            padding: 15px;
+            background: #fff9c4;
+            border-left: 4px solid #fbc02d;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal h1 {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .modal p {
+            font-size: 18px;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .modal button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .modal button:hover {
+            transform: scale(1.05);
+        }
+
+        .start-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .start-screen h1 {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .start-screen p {
+            font-size: 18px;
+            color: #666;
+            margin: 15px 0;
+        }
+
+        .start-screen button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: transform 0.2s;
+        }
+
+        .start-screen button:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                min-height: 800px;
+            }
+
+            .target-number,
+            .counter-number {
+                font-size: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <h1>🎮 Finger Counter Game</h1>
+            <p>Learn numbers by showing your fingers to the camera!</p>
+            <p>Match the target number with your extended fingers.</p>
+            <p style="margin-top: 30px; color: #f5576c; font-weight: bold;">⚠️ Make sure your camera is enabled and you have good lighting</p>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- Game Area -->
+        <div id="gameArea" class="game-area hidden">
+            <!-- Video Container -->
+            <div class="video-container">
+                <video id="video" autoplay playsinline></video>
+                <div class="canvas-container">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Game UI Panel -->
+            <div class="game-ui">
+                <!-- Target Number -->
+                <div class="ui-panel target-box">
+                    <div class="target-label">SHOW ME</div>
+                    <div class="target-number" id="targetNumber">1</div>
+                </div>
+
+                <!-- Current Counter -->
+                <div class="ui-panel counter-box">
+                    <div class="counter-label">YOUR FINGERS</div>
+                    <div class="counter-number" id="fingerCount">0</div>
+                </div>
+
+                <!-- Score -->
+                <div class="ui-panel score-box">
+                    <div class="score-item">
+                        <div class="score-label">Score</div>
+                        <div class="score-value" id="score">0/10</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-label">Round</div>
+                        <div class="score-value" id="round">1/10</div>
+                    </div>
+                </div>
+
+                <!-- Fingers Status -->
+                <div class="ui-panel">
+                    <div style="font-weight: bold; margin-bottom: 10px; color: #667eea;">Fingers Detected</div>
+                    <div id="fingersList"></div>
+                    <div id="palmStatus" class="palm-status hidden"></div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div style="padding: 0 20px;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Instruction -->
+                <div class="instruction" id="instruction">Show your fingers!</div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="modal">
+            <div class="modal-content">
+                <h1>✅ CORRECT!</h1>
+                <p>Great job! You showed <span id="correctNumber">1</span> fingers!</p>
+                <p id="nextRound"></p>
+                <button onclick="closeModal()">Next Round</button>
+            </div>
+        </div>
+
+        <!-- Game Complete Modal -->
+        <div id="completeModal" class="modal">
+            <div class="modal-content">
+                <h1>🎉 Game Complete!</h1>
+                <p>Your Final Score: <span id="finalScore">0</span>/10</p>
+                <p id="performanceRating"></p>
+                <button onclick="restartGame()">Play Again</button>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="hidden">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 20px; color: #667eea; font-weight: bold;">Loading hand detection...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TensorFlow.js and Hand Pose Detection -->
+    <script async src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+
+    <script>
+        // Game state
+        let gameState = {
+            gameActive: false,
+            targetNumber: 0,
+            currentFingerCount: 0,
+            score: 0,
+            round: 1,
+            maxRounds: 10,
+            detectionStartTime: 0,
+            handedness: 'FRONT'
+        };
+
+        let detector = null;
+        let video = null;
+        let canvas = null;
+        let ctx = null;
+
+        const fingerNames = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'];
+
+        // Initialize game
+        async function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('loadingScreen').classList.remove('hidden');
+
+            try {
+                console.log('Starting game...');
+                
+                // Load hand pose detection
+                const model = handPoseDetection.SupportedModels.MediaPipeHands;
+                const detectorConfig = {
+                    runtime: 'mediapipe',
+                    solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands'
+                };
+                detector = await handPoseDetection.createDetector(model, detectorConfig);
+                console.log('✅ Detector loaded');
+
+                // Setup video
+                video = document.getElementById('video');
+                canvas = document.getElementById('canvas');
+                ctx = canvas.getContext('2d');
+
+                console.log('Requesting camera access...');
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: false
+                });
+                
+                video.srcObject = stream;
+                console.log('✅ Camera stream started');
+
+                // Wait for video to be ready
+                video.onloadedmetadata = () => {
+                    console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    console.log('Canvas resized to:', canvas.width, 'x', canvas.height);
+
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    document.getElementById('gameArea').classList.remove('hidden');
+
+                    gameState.gameActive = true;
+                    gameState.targetNumber = Math.floor(Math.random() * 5) + 1;
+                    document.getElementById('targetNumber').textContent = gameState.targetNumber;
+                    console.log('🎮 Game started! Target:', gameState.targetNumber);
+
+                    // Start detection loop
+                    detectLoop();
+                };
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('Error: ' + error.message + '\n\nMake sure you allow camera access and have a modern browser.');
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('startScreen').classList.remove('hidden');
+            }
+        }
+
+        // Main detection loop
+        async function detectLoop() {
+            if (!gameState.gameActive) return;
+
+            try {
+                if (detector && video && video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const hands = await detector.estimateHands(video);
+                    if (hands.length > 0) {
+                        console.log('Detected hands:', hands.length, '| Fingers:', gameState.currentFingerCount);
+                    }
+                    updateGameUI(hands);
+                    drawHands(hands);
+                }
+            } catch (error) {
+                console.error('Detection error:', error);
+            }
+
+            requestAnimationFrame(detectLoop);
+        }
+
+        // Count extended fingers
+        function countExtendedFingers(hand) {
+            let count = 0;
+            let extended = [];
+
+            // MediaPipe hand keypoints:
+            // 0: wrist, 1-4: thumb, 5-8: index, 9-12: middle, 13-16: ring, 17-20: pinky
+            // Each finger: base(0), mcp(1), pip(2), dip(3), tip(4)
+            const fingerJoints = {
+                0: { tip: 4, pip: 3, mcp: 2, base: 1 },      // thumb
+                1: { tip: 8, pip: 6, mcp: 5, base: 5 },      // index
+                2: { tip: 12, pip: 10, mcp: 9, base: 9 },    // middle
+                3: { tip: 16, pip: 14, mcp: 13, base: 13 },  // ring
+                4: { tip: 20, pip: 18, mcp: 17, base: 17 }   // pinky
+            };
+
+            // Helper: calculate distance between two points
+            function distance(p1, p2) {
+                return Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2);
+            }
+
+            // Helper: calculate angle between two vectors
+            function angle(p1, p2, p3) {
+                const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+                const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+                const dot = v1.x * v2.x + v1.y * v2.y;
+                const mag1 = Math.sqrt(v1.x**2 + v1.y**2);
+                const mag2 = Math.sqrt(v2.x**2 + v2.y**2);
+                return mag1 > 0 && mag2 > 0 ? Math.acos(dot / (mag1 * mag2)) : 0;
+            }
+
+            for (let i = 0; i < 5; i++) {
+                const joints = fingerJoints[i];
+                const tip = hand.keypoints[joints.tip];
+                const pip = hand.keypoints[joints.pip];
+                const mcp = hand.keypoints[joints.mcp];
+
+                if (!tip || !pip || !mcp) continue;
+
+                // Thumb special handling (horizontal extension)
+                if (i === 0) {
+                    // For thumb, check if tip is far from wrist horizontally
+                    const wrist = hand.keypoints[0];
+                    const thumbDistance = Math.abs(tip.x - wrist.x);
+                    if (thumbDistance > 0.04 * canvas.width) {
+                        count++;
+                        extended.push(i);
+                    }
+                } else {
+                    // For other fingers: check angle and distance
+                    // A straight/extended finger has an angle close to 180 degrees (π radians)
+                    const fingerAngle = angle(tip, pip, mcp);
+                    const tipPipDistance = distance(tip, pip);
+                    const pipMcpDistance = distance(pip, mcp);
+                    
+                    // Extended if: angle > 150 degrees AND tip is significantly far from mcp
+                    if (fingerAngle > 2.6 && tipPipDistance > pipMcpDistance * 0.5) {
+                        count++;
+                        extended.push(i);
+                    }
+                }
+            }
+
+            return { count, extended };
+        }
+
+        // Detect palm orientation
+        function detectPalmOrientation(hand) {
+            // Simple heuristic: if hand is on left side of screen, likely palm facing
+            const wristX = hand.keypoints[0].x;
+            const screenCenter = canvas.width / 2;
+            return wristX > screenCenter ? 'BACK' : 'FRONT';
+        }
+
+        // Update game UI
+        function updateGameUI(hands) {
+            if (hands.length === 0) {
+                gameState.currentFingerCount = 0;
+                document.getElementById('fingerCount').textContent = '0';
+                document.getElementById('fingersList').innerHTML = '<p style="color: #999;">No hand detected</p>';
+                document.getElementById('palmStatus').classList.add('hidden');
+                return;
+            }
+
+            const hand = hands[0];
+            const { count, extended } = countExtendedFingers(hand);
+            const palmOrientation = detectPalmOrientation(hand);
+
+            gameState.currentFingerCount = count;
+            gameState.handedness = palmOrientation;
+
+            // Update finger count display
+            document.getElementById('fingerCount').textContent = count;
+
+            // Update fingers list
+            let fingersList = '';
+            for (let i = 0; i < 5; i++) {
+                const isExtended = extended.includes(i);
+                fingersList += `
+                    <div class="finger-item">
+                        <div class="finger-indicator ${isExtended ? 'extended' : 'closed'}">
+                            ${isExtended ? '✓' : '✕'}
+                        </div>
+                        <div class="finger-name">${fingerNames[i]}</div>
+                    </div>
+                `;
+            }
+            document.getElementById('fingersList').innerHTML = fingersList;
+
+            // Update palm status
+            const palmStatus = document.getElementById('palmStatus');
+            if (palmOrientation === 'FRONT') {
+                palmStatus.className = 'palm-status front';
+                palmStatus.textContent = '👋 Palm Facing Camera';
+            } else {
+                palmStatus.className = 'palm-status back';
+                palmStatus.textContent = '🔙 Back of Hand Facing Camera';
+            }
+            palmStatus.classList.remove('hidden');
+
+            // Check for match
+            if (count === gameState.targetNumber && count > 0) {
+                showSuccessModal();
+            }
+
+            // Update instruction
+            const diff = gameState.targetNumber - count;
+            if (diff > 0) {
+                document.getElementById('instruction').textContent = `Show ${diff} more finger${diff > 1 ? 's' : ''}!`;
+            } else if (diff < 0) {
+                document.getElementById('instruction').textContent = `Close ${-diff} finger${-diff > 1 ? 's' : ''}!`;
+            } else if (count > 0) {
+                document.getElementById('instruction').textContent = '🎯 Perfect match!';
+            }
+        }
+
+        // Draw hand keypoints
+        function drawHands(hands) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.translate(-canvas.width, 0);
+
+            hands.forEach(hand => {
+                // Draw connections
+                const connections = [
+                    [0, 1], [1, 2], [2, 3], [3, 4], // thumb
+                    [0, 5], [5, 6], [6, 7], [7, 8], // index
+                    [0, 9], [9, 10], [10, 11], [11, 12], // middle
+                    [0, 13], [13, 14], [14, 15], [15, 16], // ring
+                    [0, 17], [17, 18], [18, 19], [19, 20] // pinky
+                ];
+
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                connections.forEach(([start, end]) => {
+                    const p1 = hand.keypoints[start];
+                    const p2 = hand.keypoints[end];
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                });
+
+                // Draw keypoints
+                hand.keypoints.forEach((point, i) => {
+                    ctx.fillStyle = i === 0 ? '#ff0000' : '#00ff00';
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            });
+
+            ctx.restore();
+        }
+
+        // Show success modal
+        function showSuccessModal() {
+            gameState.gameActive = false;
+            document.getElementById('correctNumber').textContent = gameState.currentFingerCount;
+
+            if (gameState.round < gameState.maxRounds) {
+                document.getElementById('nextRound').textContent = `Ready for round ${gameState.round + 1}?`;
+            } else {
+                document.getElementById('nextRound').textContent = 'This was the last round!';
+            }
+
+            document.getElementById('successModal').classList.add('active');
+
+            // Play sound effect (simple beep)
+            playBeep(800, 200);
+        }
+
+        // Close modal and continue
+        function closeModal() {
+            document.getElementById('successModal').classList.remove('active');
+
+            gameState.score++;
+            gameState.round++;
+            document.getElementById('score').textContent = gameState.score + '/10';
+            document.getElementById('round').textContent = gameState.round + '/10';
+            document.getElementById('progressBar').style.width = (gameState.round / gameState.maxRounds * 100) + '%';
+
+            if (gameState.round > gameState.maxRounds) {
+                showGameCompleteModal();
+            } else {
+                gameState.targetNumber = Math.floor(Math.random() * 5) + 1;
+                document.getElementById('targetNumber').textContent = gameState.targetNumber;
+                gameState.gameActive = true;
+                playBeep(600, 100);
+            }
+        }
+
+        // Show game complete modal
+        function showGameCompleteModal() {
+            const percentage = (gameState.score / gameState.maxRounds * 100).toFixed(1);
+            let rating = '🎉 GOOD TRY!';
+            if (percentage >= 90) rating = '🌟 OUTSTANDING!';
+            else if (percentage >= 70) rating = '👏 GREAT JOB!';
+
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('performanceRating').textContent = `${rating} Accuracy: ${percentage}%`;
+            document.getElementById('completeModal').classList.add('active');
+
+            playBeep(1000, 300);
+        }
+
+        // Restart game
+        function restartGame() {
+            document.getElementById('completeModal').classList.remove('active');
+            gameState = {
+                gameActive: false,
+                targetNumber: 0,
+                currentFingerCount: 0,
+                score: 0,
+                round: 1,
+                maxRounds: 10,
+                detectionStartTime: 0,
+                handedness: 'FRONT'
+            };
+            document.getElementById('gameArea').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
+        // Simple beep sound
+        function playBeep(frequency = 800, duration = 200) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }
+    </script>
+</body>
+</html>

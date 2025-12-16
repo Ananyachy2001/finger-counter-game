@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finger Counter Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1280px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e0c3fc 0%, #f3e7e9 100%);
+            min-height: 600px;
+        }
+
+        .video-container {
+            position: relative;
+            background: black;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #videoFrame {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .loading-spinner {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .game-ui {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .ui-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .target-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .target-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .target-number {
+            font-size: 80px;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .counter-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .counter-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .counter-number {
+            font-size: 80px;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-weight: bold;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 24px;
+        }
+
+        .fingers-panel {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .finger-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+
+        .finger-indicator {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .finger-indicator.extended {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .finger-indicator.closed {
+            background: #ccc;
+            color: #666;
+        }
+
+        .finger-name {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .palm-status {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .palm-status.front {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .palm-status.back {
+            background: #ffe0b2;
+            color: #e65100;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+            transition: width 0.3s ease;
+        }
+
+        .instruction {
+            text-align: center;
+            padding: 15px;
+            background: #fff9c4;
+            border-left: 4px solid #fbc02d;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal h1 {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .modal p {
+            font-size: 18px;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .modal button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .modal button:hover {
+            transform: scale(1.05);
+        }
+
+        .start-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .start-screen h1 {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .start-screen p {
+            font-size: 18px;
+            color: #666;
+            margin: 15px 0;
+        }
+
+        .start-screen button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: transform 0.2s;
+        }
+
+        .start-screen button:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .error-message {
+            background: #ffcdd2;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                min-height: 800px;
+            }
+
+            .target-number,
+            .counter-number {
+                font-size: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen">
+            <h1>🎮 Finger Counter Game</h1>
+            <p>Learn numbers by showing your fingers to the camera!</p>
+            <p>Match the target number with your extended fingers.</p>
+            <p id="backendStatus" style="margin-top: 30px; color: #f5576c; font-weight: bold;">Connecting to server...</p>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- Game Area -->
+        <div id="gameArea" class="game-area hidden">
+            <!-- Video Container -->
+            <div class="video-container">
+                <img id="videoFrame" src="" alt="Video Stream" />
+                <div class="loading-spinner" id="spinner"></div>
+            </div>
+
+            <!-- Game UI Panel -->
+            <div class="game-ui">
+                <!-- Target Number -->
+                <div class="ui-panel target-box">
+                    <div class="target-label">SHOW ME</div>
+                    <div class="target-number" id="targetNumber">1</div>
+                </div>
+
+                <!-- Current Counter -->
+                <div class="ui-panel counter-box">
+                    <div class="counter-label">YOUR FINGERS</div>
+                    <div class="counter-number" id="fingerCount">0</div>
+                </div>
+
+                <!-- Score -->
+                <div class="ui-panel score-box">
+                    <div class="score-item">
+                        <div class="score-label">Score</div>
+                        <div class="score-value" id="score">0/10</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-label">Round</div>
+                        <div class="score-value" id="round">1/10</div>
+                    </div>
+                </div>
+
+                <!-- Fingers Status -->
+                <div class="ui-panel">
+                    <div style="font-weight: bold; margin-bottom: 10px; color: #667eea;">Fingers Detected</div>
+                    <div id="fingersList"></div>
+                    <div id="palmStatus" class="palm-status hidden"></div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div style="padding: 0 20px;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Instruction -->
+                <div class="instruction" id="instruction">Show your fingers!</div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="modal">
+            <div class="modal-content">
+                <h1>✅ CORRECT!</h1>
+                <p>Great job! You showed <span id="correctNumber">1</span> fingers!</p>
+                <p id="nextRound"></p>
+                <button onclick="closeModal()">Next Round</button>
+            </div>
+        </div>
+
+        <!-- Game Complete Modal -->
+        <div id="completeModal" class="modal">
+            <div class="modal-content">
+                <h1>🎉 Game Complete!</h1>
+                <p>Your Final Score: <span id="finalScore">0</span>/10</p>
+                <p id="performanceRating"></p>
+                <button onclick="restartGame()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Flexible API URL configuration
+        function getApiUrl() {
+            // If running on localhost, use local backend
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:5000/api';
+            }
+            // For production, use Render backend (replace with your backend URL)
+            return 'https://finger-counter-backend.onrender.com/api';
+        }
+
+        const API_URL = getApiUrl();
+        console.log('Using API:', API_URL);
+
+        // Game state
+        let gameState = {
+            gameActive: false,
+            targetNumber: 0,
+            currentFingerCount: 0,
+            score: 0,
+            round: 1,
+            maxRounds: 10,
+            backendReady: false
+        };
+
+        const fingerNames = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'];
+
+        // Check backend health
+        async function checkBackend() {
+            try {
+                const response = await fetch(API_URL + '/health');
+                const data = await response.json();
+                gameState.backendReady = data.status === 'healthy';
+                
+                if (gameState.backendReady) {
+                    document.getElementById('backendStatus').textContent = '✅ Backend ready! Start the game.';
+                    document.getElementById('backendStatus').style.color = '#4CAF50';
+                } else {
+                    document.getElementById('backendStatus').textContent = '⚠️ Backend starting...';
+                    setTimeout(checkBackend, 2000);
+                }
+            } catch (error) {
+                document.getElementById('backendStatus').textContent = '❌ Cannot connect to backend. Make sure app.py is running on localhost:5000';
+                console.error('Backend check failed:', error);
+                setTimeout(checkBackend, 3000);
+            }
+        }
+
+        // Initialize game
+        async function startGame() {
+            if (!gameState.backendReady) {
+                alert('Backend is not ready yet. Please wait...');
+                return;
+            }
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameArea').classList.remove('hidden');
+
+            gameState.gameActive = true;
+            gameState.targetNumber = Math.floor(Math.random() * 5) + 1;
+            document.getElementById('targetNumber').textContent = gameState.targetNumber;
+
+            // Start frame polling
+            pollFrames();
+        }
+
+        // Poll frames from backend
+        async function pollFrames() {
+            try {
+                const response = await fetch(API_URL + '/frame');
+                if (!response.ok) throw new Error('Frame fetch failed');
+                
+                const data = await response.json();
+                
+                // Display frame
+                document.getElementById('videoFrame').src = 'data:image/jpeg;base64,' + data.image;
+                document.getElementById('spinner').style.display = 'none';
+
+                // Update game UI only if game is active
+                if (gameState.gameActive) {
+                    updateGameUI(data.finger_count, data.extended_fingers, data.palm_facing);
+                }
+
+            } catch (error) {
+                console.error('Poll error:', error);
+            }
+
+            // Continue polling ALWAYS
+            requestAnimationFrame(pollFrames);
+        }
+
+        // Update game UI
+        function updateGameUI(fingerCount, extendedFingers, palmFacing) {
+            gameState.currentFingerCount = fingerCount;
+
+            // Update finger count display
+            document.getElementById('fingerCount').textContent = fingerCount;
+
+            // Update fingers list
+            let fingersList = '';
+            for (let i = 0; i < 5; i++) {
+                const isExtended = extendedFingers.includes(i);
+                fingersList += `
+                    <div class="finger-item">
+                        <div class="finger-indicator ${isExtended ? 'extended' : 'closed'}">
+                            ${isExtended ? '✓' : '✕'}
+                        </div>
+                        <div class="finger-name">${fingerNames[i]}</div>
+                    </div>
+                `;
+            }
+            document.getElementById('fingersList').innerHTML = fingersList;
+
+            // Update palm status
+            const palmStatus = document.getElementById('palmStatus');
+            if (palmFacing) {
+                palmStatus.className = 'palm-status front';
+                palmStatus.textContent = '👋 Palm Facing Camera';
+            } else {
+                palmStatus.className = 'palm-status back';
+                palmStatus.textContent = '🔙 Back of Hand Facing Camera';
+            }
+            palmStatus.classList.remove('hidden');
+
+            // Check for match
+            if (fingerCount === gameState.targetNumber && fingerCount > 0) {
+                showSuccessModal();
+            }
+
+            // Update instruction
+            const diff = gameState.targetNumber - fingerCount;
+            if (diff > 0) {
+                document.getElementById('instruction').textContent = `Show ${diff} more finger${diff > 1 ? 's' : ''}!`;
+            } else if (diff < 0) {
+                document.getElementById('instruction').textContent = `Close ${-diff} finger${-diff > 1 ? 's' : ''}!`;
+            } else if (fingerCount > 0) {
+                document.getElementById('instruction').textContent = '🎯 Perfect match!';
+            }
+        }
+
+        // Show success modal
+        function showSuccessModal() {
+            if (document.getElementById('successModal').classList.contains('active')) return;
+
+            gameState.gameActive = false;
+            document.getElementById('correctNumber').textContent = gameState.currentFingerCount;
+
+            if (gameState.round < gameState.maxRounds) {
+                document.getElementById('nextRound').textContent = `Ready for round ${gameState.round + 1}?`;
+            } else {
+                document.getElementById('nextRound').textContent = 'This was the last round!';
+            }
+
+            document.getElementById('successModal').classList.add('active');
+            playBeep(800, 200);
+        }
+
+        // Close modal and continue
+        function closeModal() {
+            document.getElementById('successModal').classList.remove('active');
+
+            gameState.score++;
+            gameState.round++;
+            document.getElementById('score').textContent = gameState.score + '/10';
+            document.getElementById('round').textContent = gameState.round + '/10';
+            document.getElementById('progressBar').style.width = (gameState.round / gameState.maxRounds * 100) + '%';
+
+            if (gameState.round > gameState.maxRounds) {
+                showGameCompleteModal();
+            } else {
+                gameState.targetNumber = Math.floor(Math.random() * 5) + 1;
+                document.getElementById('targetNumber').textContent = gameState.targetNumber;
+                gameState.gameActive = true;
+                playBeep(600, 100);
+            }
+        }
+
+        // Show game complete modal
+        function showGameCompleteModal() {
+            const percentage = (gameState.score / gameState.maxRounds * 100).toFixed(1);
+            let rating = '🎉 GOOD TRY!';
+            if (percentage >= 90) rating = '🌟 OUTSTANDING!';
+            else if (percentage >= 70) rating = '👏 GREAT JOB!';
+
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('performanceRating').textContent = `${rating} Accuracy: ${percentage}%`;
+            document.getElementById('completeModal').classList.add('active');
+
+            playBeep(1000, 300);
+        }
+
+        // Restart game
+        function restartGame() {
+            document.getElementById('completeModal').classList.remove('active');
+            gameState = {
+                gameActive: false,
+                targetNumber: 0,
+                currentFingerCount: 0,
+                score: 0,
+                round: 1,
+                maxRounds: 10,
+                backendReady: true
+            };
+            document.getElementById('gameArea').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
+        // Simple beep sound
+        function playBeep(frequency = 800, duration = 200) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+
+                gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration / 1000);
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        }
+
+        // Check backend on page load
+        window.addEventListener('load', () => {
+            checkBackend();
+        });
+    </script>
+</body>
+</html>
